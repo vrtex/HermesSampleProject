@@ -3,9 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/Character.h"
 #include "HermesSampleCharacter.generated.h"
 
+struct FHermesMessage;
+class UHermesMessenger;
 UCLASS(config=Game)
 class AHermesSampleCharacter : public ACharacter
 {
@@ -20,6 +23,8 @@ class AHermesSampleCharacter : public ACharacter
 	class UCameraComponent* FollowCamera;
 public:
 	AHermesSampleCharacter();
+
+	virtual void BeginPlay() override;
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
@@ -61,5 +66,11 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+private:
+
+	void AnyMessageCallback(UHermesMessenger* Messenger, const FHermesMessage* Message);
+	TMap<FGameplayTag, int32> CollectedMessages;
+	void DumpLog();
 };
 

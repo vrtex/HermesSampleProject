@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "HermesSampleCharacter.h"
+
+#include "HermesUtilities.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -51,6 +53,18 @@ AHermesSampleCharacter::AHermesSampleCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
 
+void AHermesSampleCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if(UHermesMessenger* Messenger = UHermesUtilities::GetHermesMessenger(this))
+	{
+		Messenger->GetDelegateForMessageTag(FGameplayTag::EmptyTag, false).AddUObject(this, &AHermesSampleCharacter::AnyMessageCallback);
+		FTimerHandle Dummy;
+		GetWorld()->GetTimerManager().SetTimer(Dummy, FTimerDelegate::CreateUObject(this, &AHermesSampleCharacter::DumpLog), 1.f, true);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -75,6 +89,21 @@ void AHermesSampleCharacter::SetupPlayerInputComponent(class UInputComponent* Pl
 	// handle touch devices
 	PlayerInputComponent->BindTouch(IE_Pressed, this, &AHermesSampleCharacter::TouchStarted);
 	PlayerInputComponent->BindTouch(IE_Released, this, &AHermesSampleCharacter::TouchStopped);
+}
+
+void AHermesSampleCharacter::AnyMessageCallback(UHermesMessenger* Messenger, const FHermesMessage* Message)
+{
+	CollectedMessages.FindOrAdd(Message->MessageTag, 0)++;
+}
+
+void AHermesSampleCharacter::DumpLog()
+{
+	UE_LOG(LogTemp, Log, TEXT("Player pawn messages from last second: "));
+	for(const auto& [Tag, Count] : CollectedMessages)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Message tag: %s, count: %d"), *Tag.GetTagName().ToString(), Count);
+	}
+	CollectedMessages.Empty();
 }
 
 void AHermesSampleCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
